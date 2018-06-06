@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt #绘图用的模块  
-from mpl_toolkits.mplot3d import Axes3D #绘制3D坐标的函数  
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.fftpack import fft
 
@@ -72,13 +72,14 @@ def get_rad_fft(rtfunc, r, N, T, with_column_zero=1):
     
 
 #next step:
-##########################################################################
 ##################          (validated)            #######################
-####    计算回转部分的三种方式：
-####    1、直接观察Zernike多项式中与theta无关的项
-####    2、进行FFT变换，第0项即为回转部分
-####    3、在每个径向位置计算均值
-####    原多项式与之相减得非回转部分
+'''
+    计算回转部分的三种方式：
+    1、直接观察Zernike多项式中与theta无关的项
+    2、进行FFT变换，第0项即为回转部分
+    3、在每个径向位置计算均值
+    原多项式与之相减得非回转部分
+'''
 
 #X=np.arange(-15,15,0.5, dtype=np.double)  
 #Y=np.arange(-15,15,0.5, dtype=np.double)#创建了从-2到2，步长为0.1的arange对象  
@@ -92,13 +93,15 @@ for i in np.arange(0, np.shape(X)[0]):
     for j in np.arange(0, np.shape(Y)[0]):
         Z[i, j] = rtheta2xy(zfunc, X[i, j], Y[i, j])
 
+########################    PLOTTING SECTION    #################################
+
 # Number of sample points
 N = 50
 # sample spacing
 T = 1.0 / 50.0
 
 fig0 = plt.figure()
-ax0 = fig0.add_subplot(111, projection='3d')
+ax0 = fig0.add_subplot(111, projection='3d', title="Amplitude-Frequency Plot")
 yticks = np.linspace(0, 15, 31)
 for y in yticks:
     xf, yf = get_rad_fft(zfunc, y, N, T, 0)
@@ -108,14 +111,9 @@ ax0.set_ylabel('Y (R Position)')
 ax0.set_zlabel('Z (Amplitude)')
 #ax0.set_yticks(yticks)
 
-#plt.scatter(xf, 1.0/N * np.abs(yf))
-#plt.grid()
-#plt.show()
-########################    PLOTTING SECTION    #################################
-
 fig1=plt.figure()#创建一个绘图对象  
-ax1=Axes3D(fig1)#用这个绘图对象创建一个Axes对象(有3D坐标)  
-plt.title("Curved Surface")#总标题
+ax1=Axes3D(fig1, title="Curved Surface")#用这个绘图对象创建一个Axes对象(有3D坐标)  
+#plt.title("Curved Surface")#总标题
 theta_edge = np.linspace(0, 2*np.pi, 200)
 r = 15
 xr = r*np.cos(theta_edge)
