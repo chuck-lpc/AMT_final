@@ -1,3 +1,5 @@
+#! python3
+# coding: utf-8
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -133,109 +135,71 @@ def plot_3d_fft(func, edge_r=15, D=2, N=50, T=1.0/50.0, title_fft='NO TITLE'):
     #ax0.set_yticks(yticks)#decomment to enable all valid y coordinate
     return
 
-#next step:
-##################          (validated)            #######################
-'''
-    计算回转部分的三种方式：
-    1、直接观察Zernike多项式中与theta无关的项
-    2、进行FFT变换，第0项即为回转部分(accomplished)
-    3、在每个径向位置计算均值
-    原多项式与之相减得非回转部分
-'''
+def plot_z_v_a(func):
+    # tool start from the edge, theta = 0
+    # S = 1000rpm = 1000/60rps
+    # take 600 sample points per round
+    # 600*1000/60 points per second
+    # time interval between two consecutive points = 60/(600*1000) = 0.1ms
 
-
-# tool start from the edge, theta = 0
-# S = 1000rpm = 1000/60rps
-# take 600 sample points per round
-# 600*1000/60 points per second
-# time interval between two consecutive points = 60/(600*1000) = 0.1ms
-
-theta_var = np.linspace(0, 5*2*np.pi, 5*600+1)[:5*600]
-zfts = np.zeros(5*600)#zfts initalization
-vfts = np.zeros(np.size(zfts)-1)#vfts initalization
-afts = np.zeros(np.size(vfts)-1)#afts initalization
-non_rot_composition = get_nonrot_part(zfunc)
+    theta_var = np.linspace(0, 5*2*np.pi, 5*600+1)[:5*600]
+    zfts = np.zeros(5*600)#zfts initalization
+    vfts = np.zeros(np.size(zfts)-1)#vfts initalization
+    afts = np.zeros(np.size(vfts)-1)#afts initalization
+    non_rot_composition = get_nonrot_part(func)
     
 
-# f = 1mm/min = 1mm/1000rounds = 1/(1000*2*np.pi)mm/rad
-# r's variation based on angle = 1/(1000*2*np.pi)mm/rad
-for i in np.arange(0, np.size(zfts)):
-    r = 15-theta_var[i]*1/(1000*2*np.pi)
-    zfts[i] = non_rot_composition(r, theta_var[i])
-for i in np.arange(0, np.size(vfts)):
-    vfts[i] = (zfts[i+1]-zfts[i])/0.1
-for i in np.arange(0, np.size(afts)):
-    afts[i] = (vfts[i+1]-vfts[i])/0.1
-time = np.arange(0, 4*600*0.1, 0.1)
-plt.subplot(3, 1, 1)
-plt.plot(time, zfts[:np.size(time)], '-')
-plt.title('Zfts')
-plt.ylabel('Zfts/mm')
-plt.xlabel('Time/ms')
+    # f = 1mm/min = 1mm/1000rounds = 1/(1000*2*np.pi)mm/rad
+    # r's variation based on angle = 1/(1000*2*np.pi)mm/rad
+    for i in np.arange(0, np.size(zfts)):
+        r = 15-theta_var[i]*1/(1000*2*np.pi)
+        zfts[i] = non_rot_composition(r, theta_var[i])
+    for i in np.arange(0, np.size(vfts)):
+        vfts[i] = (zfts[i+1]-zfts[i])/0.1
+    for i in np.arange(0, np.size(afts)):
+        afts[i] = (vfts[i+1]-vfts[i])/0.1
+    time = np.arange(0, 4*600*0.1, 0.1)
+    plt.subplot(3, 1, 1)
+    plt.plot(time, zfts[:np.size(time)], '-')
+    plt.title('Zfts')
+    plt.ylabel('Zfts/mm')
+    plt.xlabel('Time/ms')
 
-plt.subplot(3, 1, 2)
-plt.plot(time, vfts[:np.size(time)], '-')
-plt.title('Vfts')
-plt.ylabel('Vfts/(mm/ms)')
-plt.xlabel('Time/ms')
+    plt.subplot(3, 1, 2)
+    plt.plot(time, vfts[:np.size(time)], '-')
+    plt.title('Vfts')
+    plt.ylabel('Vfts/(mm/ms)')
+    plt.xlabel('Time/ms')
 
-plt.subplot(3, 1, 3)
-plt.plot(time, afts[:np.size(time)], '-')
-plt.title('Afts')
-plt.ylabel('Afts/(mm/ms^2)')
-plt.xlabel('Time/ms')
+    plt.subplot(3, 1, 3)
+    plt.plot(time, afts[:np.size(time)], '-')
+    plt.title('Afts')
+    plt.ylabel('Afts/(mm/ms^2)')
+    plt.xlabel('Time/ms')
 
-plt.show()
-
-
-########################    PLOTTING SECTION    #################################
+    plt.show()
+    return
+##################          (validated)            #######################
+'''
+        Three ways to obtain rot composition
+    1, Observe Zernike Polynomial literally, then pick up every term
+       that is irrevelent to theta
+    2, Process FFT, then pick up the zeroth term(accomplished)
+    3, calculate the mean at every radius value
+    Difference between original surface and rot composition 
+    is non-rot composition
+'''
+##################        PLOTTING SECTION         #######################
 # Number of devided times
 #D = 2
 # Number of sample points
 #N = 50
 # sample spacing
 #T = 1.0 / 50.0
-plot_3d_fft(zfunc, edge_r=15, D=2, N=50, T=1.0/50.0, title_fft="Amplitude-Frequency Plot")
-plot_surface(zfunc, edge_r=15, title_sub='Curved Surface')
-plot_surface(get_rot_part(zfunc), edge_r=15, title_sub='Rot Component')
-plot_surface(get_nonrot_part(zfunc), edge_r=15, title_sub='NonRot Component')
+if __name__ == "__main__":
+    plot_z_v_a(zfunc)
+    plot_3d_fft(zfunc, edge_r=15, D=2, N=50, T=1.0/50.0, title_fft="Amplitude-Frequency Plot")
+    plot_surface(zfunc, edge_r=15, title_sub='Curved Surface')
+    plot_surface(get_rot_part(zfunc), edge_r=15, title_sub='Rot Component')
+    plot_surface(get_nonrot_part(zfunc), edge_r=15, title_sub='NonRot Component')
 
-"""
-fig0 = plt.figure()
-ax0 = fig0.add_subplot(111, projection='3d', title="Amplitude-Frequency Plot")
-yticks = np.linspace(0, 15, 15*D+1)
-for y in yticks:
-    xf, yf = get_rad_fft(zfunc, y, N, T, 0)
-    ax0.bar(xf, yf, zs=y, zdir = 'y', alpha = 0.8)
-ax0.set_xlabel('X (Digital Frequency)')
-ax0.set_ylabel('Y (R Position)')
-ax0.set_zlabel('Z (Amplitude)')
-#ax0.set_yticks(yticks)#decomment to enable all valid y coordinate
-"""
-'''
-X=np.linspace(-15, 15, 2*30+1)
-Y=np.linspace(-15, 15, 2*30+1)
-#X, Y represent all possible values in the coordinate
-#using all possible values in linspace object to map all possible points
-X,Y=np.meshgrid(X,Y)
-Z = np.zeros((np.shape(X)[0], np.shape(Y)[0]), dtype = np.double)
-for i in np.arange(0, np.shape(X)[0]):
-    for j in np.arange(0, np.shape(Y)[0]):
-        Z[i, j] = rtheta2xy(zfunc, X[i, j], Y[i, j])
-
-fig1=plt.figure()#Create a plt object  
-ax1=Axes3D(fig1, title="Curved Surface")#Create an Axes object (with 3D cord)  
-theta_edge = np.linspace(0, 2*np.pi, 200)
-r = 15
-xr = r*np.cos(theta_edge)
-yr = r*np.sin(theta_edge)
-zr = np.zeros(np.size(theta_edge))
-for i in np.arange(0, np.size(theta_edge)):
-    zr[i] = zfunc(r, theta_edge[i])
-ax1.plot(xr, yr, zr, label='curve')
-ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=plt.cm.coolwarm)#construct surface with (x,y,z)
-ax1.set_xlabel('x label', color='r')  
-ax1.set_ylabel('y label', color='g')  
-ax1.set_zlabel('z label', color='b')#adding lable
-plt.show()#show all plotting objects
-'''
