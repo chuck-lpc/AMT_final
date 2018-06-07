@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.fftpack import fft
+import math_tool
 
 def polyfunc(r, theta):
     ci = np.array([0 ,0, 0, 0, 1.205834, 1.209232, -0.073527,
@@ -86,24 +87,43 @@ def get_nonrot_part(func):
         return value
     return func_out
 
+def tool_rad_compensate(func, r_tool):
+    def func_out(r, theta):
+        def f(x):
+            val = func(x, theta)
+            return val
+        df = math_tool.deriv_func(f)
+        def diff_var_g(x):
+            val = x - r_tool*df(x)/np.sqrt(1+df(x)**2)
+            return val
+        x = math_tool.solve_newton_method(diff_var_g, r)
+        result = f(x)-r_tool/np.sqrt(1+df(x)**2)
+        return result
+    return func_out
+
 def plot_surface(func ,edge_r=15, title_sub='NO TITLE'):
-    X=np.linspace(-edge_r, edge_r, 2*2*edge_r+1)
-    Y=np.linspace(-edge_r, edge_r, 2*2*edge_r+1)
+    X=np.linspace(-edge_r, edge_r, 2*2*int(edge_r)+1)
+    Y=np.linspace(-edge_r, edge_r, 2*2*int(edge_r)+1)
     #X, Y represent all possible values in the coordinate
     #using all possible values in linspace object to map all possible points
     X,Y=np.meshgrid(X,Y)
     Z = np.zeros((np.shape(X)[0], np.shape(Y)[0]), dtype = np.double)
+    Z_in = np.zeros((np.shape(X)[0], np.shape(Y)[0]), dtype = np.double)
     for i in np.arange(0, np.shape(X)[0]):
         for j in np.arange(0, np.shape(Y)[0]):
             Z[i, j] = rtheta2xy(func, X[i, j], Y[i, j])
+            if (X[i, j]**2+Y[i, j]**2>edge_r**2):
+                Z_in[i, j] = rtheta2xy(func, 0, 0)
+            else:
+                Z_in[i, j] = rtheta2xy(func, X[i, j], Y[i, j])
 
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('~~~~~~~~~~~~max/min~~~~~~~~~~~~~')
     print(title_sub)
     print('max:')
-    print(Z.max())
+    print(Z_in.max())
     print('min:')
-    print(Z.min())
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print(Z_in.min())
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     
     fig1=plt.figure()#Create a plt object  
     ax1=Axes3D(fig1, title=title_sub)#Create an Axes object (with 3D cord)  
@@ -119,7 +139,7 @@ def plot_surface(func ,edge_r=15, title_sub='NO TITLE'):
     ax1.set_xlabel('x label', color='r')  
     ax1.set_ylabel('y label', color='g')  
     ax1.set_zlabel('z label', color='b')#adding lable
-    plt.show()#show all plotting objects
+#    plt.show()#show all plotting objects
     return
 
 def plot_3d_fft(func, edge_r=15, D=2, N=50, T=1.0/50.0, title_fft='NO TITLE'):
@@ -147,17 +167,26 @@ def plot_z_v_a(func):
     vfts = np.zeros(np.size(zfts)-1)#vfts initalization
     afts = np.zeros(np.size(vfts)-1)#afts initalization
     non_rot_composition = get_nonrot_part(func)
+    print('non_rot_composition function established')
+    compensated = tool_rad_compensate(non_rot_composition, 0.5)
+    print('compensated function established')
     
 
     # f = 1mm/min = 1mm/1000rounds = 1/(1000*2*np.pi)mm/rad
     # r's variation based on angle = 1/(1000*2*np.pi)mm/rad
     for i in np.arange(0, np.size(zfts)):
         r = 15-theta_var[i]*1/(1000*2*np.pi)
-        zfts[i] = non_rot_composition(r, theta_var[i])
+
+    #choose one of the following two lines to switch between compensated/non-compensated
+        zfts[i] = compensated(r, theta_var[i])
+#        zfts[i] = non_rot_composition(r, theta_var[i])
+        print('zfts value calculated %i, %i in total'%(i, np.size(zfts)))
     for i in np.arange(0, np.size(vfts)):
         vfts[i] = (zfts[i+1]-zfts[i])/0.1
+        print('vfts value calculated %i, %i in total'%(i, np.size(vfts)))
     for i in np.arange(0, np.size(afts)):
         afts[i] = (vfts[i+1]-vfts[i])/0.1
+        print('afts value calculated %i, %i in total'%(i, np.size(afts)))
     time = np.arange(0, 4*600*0.1, 0.1)
     plt.subplot(3, 1, 1)
     plt.plot(time, zfts[:np.size(time)], '-')
@@ -177,7 +206,7 @@ def plot_z_v_a(func):
     plt.ylabel('Afts/(mm/ms^2)')
     plt.xlabel('Time/ms')
 
-    plt.show()
+#    plt.show()
     return
 ##################          (validated)            #######################
 '''
@@ -202,4 +231,12 @@ if __name__ == "__main__":
     plot_surface(zfunc, edge_r=15, title_sub='Curved Surface')
     plot_surface(get_rot_part(zfunc), edge_r=15, title_sub='Rot Component')
     plot_surface(get_nonrot_part(zfunc), edge_r=15, title_sub='NonRot Component')
+    plt.show()#show all plotting objects
+#next step:
+#最后一问的修改.参照之前草图，修饰刀具z值
+#对某一x值，等号左边即为刀具z值
+#方法为：输入刀具的径向位置，该径向位置即为g()内的变量
+#建立方程，求出实际切削点的径向位置（图中x）（使用牛顿迭代）
+#将x带入等号左边，求出刀具z值
 
+#NOTE: max/min should be generated within the circle edge(fixed)
