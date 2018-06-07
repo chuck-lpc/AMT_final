@@ -1,12 +1,41 @@
 #! python3
 # coding: utf-8
+# * =====================================================================================
+# *
+# *       Filename:  AMT_final.py
+# *
+# *    Description:  Python program for AMT2018 final thesis
+# *
+# *        Version:  1.0
+# *        Created:  06/07/2018 07:09:10 PM
+# *       Revision:  none
+# *    Interpreter:  Python3.6
+# *
+# *         Author:  Pengchao LIANG, chuck_lpc@126.com
+# *   Organization:  Tinjin University
+# *
+# * =====================================================================================
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#THE SOFTWARE.
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.fftpack import fft
-import math_tool
+import math_tool 
 
 def polyfunc(r, theta):
+# description:  Definition of the Zernike polynomial. Takes in r and theta, which is
+#               the position based on cylindrical coordinate (CC), returns Z value on that
+#               position, just like the literal function do.
+# param:        r, theta
+# return:       sum,  which represents the value of Z
     ci = np.array([0 ,0, 0, 0, 1.205834, 1.209232, -0.073527,
                   0.283878, -0.047157, 0.69305, 0.0821, -0.520752,
                  -0.054379, -0.092302, 0.02262, -0.009395], dtype=np.double)
@@ -25,6 +54,9 @@ def polyfunc(r, theta):
     return sum
 
 def rot(r, theta):
+# description:  Definition of the conical section. Similar to polyfunc
+# param:        r, theta
+# return:       result,  which represents the value of Z
     c = 1/594.51107
     k = 0
     numerator = c*r**2
@@ -33,10 +65,20 @@ def rot(r, theta):
     return result
 
 def zfunc(r, theta):
+# description:  Definition of the surface shape function. This function
+#               is a combination of polyfunc and rot. Meanwhile, normalization
+#               for r is processed.
+# param:        r, theta
+# return:       result,  which represents the value of Z
     result = polyfunc(r/200, theta)+rot(r, theta)
     return result
 
 def rtheta2xy(func, x, y):
+# description:  Takes a combination of x and y (under rectangular coordinates)(RC), 
+#               and gives the Z value of a function which takes cylindrical 
+#               coordinate (CC) at that point.
+# param:        x, y: coordinate in rectangular coordinates (RC).
+# return:       result,  which represents the value of Z
     r = (x**2+y**2)**0.5
     if x > 0:
         theta = np.arctan(y/x)
@@ -51,6 +93,12 @@ def rtheta2xy(func, x, y):
     return result
 
 def get_rad_seq(rtfunc, r, N):
+# description:  For a given function in cylindrical coordinate (CC), generate a 
+#               sample sequence of Z value on a specific circle with radius r.
+# param:        rtfunc: the target function which is based on CC
+#               r: radius of the circle
+#               N: number of sample points
+# return:       result,  which is a generated sequence with length N
     result = np.zeros(N)
     vtheta = np.linspace(0, 2*np.pi, N)
     for i in np.arange(0, N):
@@ -58,6 +106,16 @@ def get_rad_seq(rtfunc, r, N):
     return result
 
 def get_rad_fft(rtfunc, r, N, T, with_column_zero=1):
+# description:  Generate a FFT sequence for a given function (CC).
+# param:        rtfunc: the target function which is based on CC
+#               r: radius of the circle
+#               N: number of sample points
+#               T: sample spacing
+#               with_column_zero: controls whether the FFT sequence will
+#                                 have 0th term, 1 (by default) 
+#                                 represents yes, 0 represents no
+# return:       xf: frequency scale
+#               yf: amplitude scale
     if (with_column_zero==1):
         x = np.linspace(0.0, N*T, N)
         y = get_rad_seq(rtfunc, r, N)
@@ -74,6 +132,10 @@ def get_rad_fft(rtfunc, r, N, T, with_column_zero=1):
         return xf, yf
 
 def get_rot_part(func):
+# description:  Get the rotation part in a given surface shape function
+# param:        func: the target function which is based on CC
+# return:       func_out: function that represents the rot composition,
+#                         whose input and output are similar to that of zfunc
     def func_out(r, theta):
         xf, yf = get_rad_fft(func, r, 50, 1.0/50.0, with_column_zero=1)
         value = yf[0]
@@ -81,6 +143,11 @@ def get_rot_part(func):
     return func_out
 
 def get_nonrot_part(func):
+# description:  Get the non-rotation part in a given surface shape function, 
+#               similar to get_rot_part
+# param:        func: the target function which is based on CC
+# return:       func_out: function that represents the non-rot composition,
+#                         whose input and output are similar to that of zfunc
     rot_part = get_rot_part(func)
     def func_out(r, theta):
         value = func(r, theta)-rot_part(r, theta)
@@ -88,6 +155,11 @@ def get_nonrot_part(func):
     return func_out
 
 def tool_rad_compensate(func, r_tool):
+# description:  decorate func to output a compensated surface shape function
+# param:        func: the target function which is based on CC
+#               r_tool: radius of lathe tool
+# return:       func_out: function that represents the compensated surface shape
+#                         function whose input and output are similar to that of zfunc
     def func_out(r, theta):
         def f(x):
             val = func(x, theta)
@@ -135,7 +207,8 @@ def plot_surface(func ,edge_r=15, title_sub='NO TITLE'):
         zr[i] = func(edge_r, theta_edge[i])
 
     ax1.plot(xr, yr, zr, label='edge')
-    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=plt.cm.coolwarm)#construct surface with (x,y,z)
+    #construct surface with (x,y,z)
+    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=plt.cm.coolwarm)
     ax1.set_xlabel('x label', color='r')  
     ax1.set_ylabel('y label', color='g')  
     ax1.set_zlabel('z label', color='b')#adding lable
@@ -178,15 +251,15 @@ def plot_z_v_a(func):
         r = 15-theta_var[i]*1/(1000*2*np.pi)
 
     #choose one of the following two lines to switch between compensated/non-compensated
-        zfts[i] = compensated(r, theta_var[i])
+        zfts[i] = non_rot_composition(r, theta_var[i])
 #        zfts[i] = non_rot_composition(r, theta_var[i])
-        print('zfts value calculated %i, %i in total'%(i, np.size(zfts)))
+#        print('zfts value calculated %i, %i in total'%(i, np.size(zfts)))
     for i in np.arange(0, np.size(vfts)):
         vfts[i] = (zfts[i+1]-zfts[i])/0.1
-        print('vfts value calculated %i, %i in total'%(i, np.size(vfts)))
+#        print('vfts value calculated %i, %i in total'%(i, np.size(vfts)))
     for i in np.arange(0, np.size(afts)):
         afts[i] = (vfts[i+1]-vfts[i])/0.1
-        print('afts value calculated %i, %i in total'%(i, np.size(afts)))
+#        print('afts value calculated %i, %i in total'%(i, np.size(afts)))
     time = np.arange(0, 4*600*0.1, 0.1)
     plt.subplot(3, 1, 1)
     plt.plot(time, zfts[:np.size(time)], '-')
