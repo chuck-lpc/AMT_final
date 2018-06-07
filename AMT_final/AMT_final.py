@@ -251,15 +251,15 @@ def plot_z_v_a(func):
         r = 15-theta_var[i]*1/(1000*2*np.pi)
 
     #choose one of the following two lines to switch between compensated/non-compensated
-        zfts[i] = non_rot_composition(r, theta_var[i])
+        zfts[i] = compensated(r, theta_var[i])
 #        zfts[i] = non_rot_composition(r, theta_var[i])
-#        print('zfts value calculated %i, %i in total'%(i, np.size(zfts)))
+        print('zfts value calculated %i, %i in total'%(i, np.size(zfts)))
     for i in np.arange(0, np.size(vfts)):
         vfts[i] = (zfts[i+1]-zfts[i])/0.1
-#        print('vfts value calculated %i, %i in total'%(i, np.size(vfts)))
+        print('vfts value calculated %i, %i in total'%(i, np.size(vfts)))
     for i in np.arange(0, np.size(afts)):
         afts[i] = (vfts[i+1]-vfts[i])/0.1
-#        print('afts value calculated %i, %i in total'%(i, np.size(afts)))
+        print('afts value calculated %i, %i in total'%(i, np.size(afts)))
     time = np.arange(0, 4*600*0.1, 0.1)
     plt.subplot(3, 1, 1)
     plt.plot(time, zfts[:np.size(time)], '-')
