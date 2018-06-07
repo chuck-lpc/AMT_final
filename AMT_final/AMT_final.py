@@ -166,7 +166,7 @@ def tool_rad_compensate(func, r_tool):
             return val
         df = math_tool.deriv_func(f)
         def diff_var_g(x):
-            val = x - r_tool*df(x)/np.sqrt(1+df(x)**2)
+            val = x - r_tool*df(x)/np.sqrt(1+df(x)**2)-r
             return val
         x = math_tool.solve_newton_method(diff_var_g, r)
         result = f(x)-r_tool/np.sqrt(1+df(x)**2)
