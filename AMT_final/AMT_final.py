@@ -305,11 +305,5 @@ if __name__ == "__main__":
     plot_surface(get_rot_part(zfunc), edge_r=15, title_sub='Rot Component')
     plot_surface(get_nonrot_part(zfunc), edge_r=15, title_sub='NonRot Component')
     plt.show()#show all plotting objects
-#next step:
-#最后一问的修改.参照之前草图，修饰刀具z值
-#对某一x值，等号左边即为刀具z值
-#方法为：输入刀具的径向位置，该径向位置即为g()内的变量
-#建立方程，求出实际切削点的径向位置（图中x）（使用牛顿迭代）
-#将x带入等号左边，求出刀具z值
 
 #NOTE: max/min should be generated within the circle edge(fixed)
