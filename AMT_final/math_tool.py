@@ -6,12 +6,19 @@ dvar = np.float(0.0000000001)
 #    return (func(val+dvar)-func(val-dvar))/(dvar*2)
 
 def deriv_func(func):
+# description:  finding the derivate of the input function
+# param:        func: the target function
+# return:       func_out: the derivation function
     def func_out(val):
         result = (func(val+dvar)-func(val-dvar))/(dvar*2)
         return result
     return func_out
 
 def solve_newton_method(func, initval):
+# description:  find the zero point of input func, using Newton's method
+# param:        func: the target function
+#               initval: initial value of Newton's method
+# return:       temp: the zero point
     func_deriv = deriv_func(func)
     temp = initval
     while abs(func(temp))>0.00001:
