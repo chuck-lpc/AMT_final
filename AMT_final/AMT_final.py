@@ -105,7 +105,7 @@ def get_rad_seq(rtfunc, r, N):
         result[i] = rtfunc(r, vtheta[i])
     return result
 
-def get_rad_fft(rtfunc, r, N, T, with_column_zero=1):
+def get_rad_fft(rtfunc, r, N, T, with_column_zero=1, abs = 1):
 # description:  Generate a FFT sequence for a given function (CC).
 # param:        rtfunc: the target function which is based on CC
 #               r: radius of the circle
@@ -120,16 +120,50 @@ def get_rad_fft(rtfunc, r, N, T, with_column_zero=1):
         x = np.linspace(0.0, N*T, N)
         y = get_rad_seq(rtfunc, r, N)
         yf_complex = fft(y)
-        yf = 1.0/N * np.abs(yf_complex)
+        if (abs==1):
+            yf = 1.0/N * np.abs(yf_complex)
+        else:
+            yf = 1.0/N * yf_complex
         xf = np.linspace(0.0, 1.0/T-1, N)
         return xf, yf
     elif (with_column_zero==0):
         x = np.linspace(0.0, N*T, N)
         y = get_rad_seq(rtfunc, r, N)
         yf_complex = fft(y)[1:]
-        yf = 1.0/N * np.abs(yf_complex)
+#        yf = 1.0/N * np.abs(yf_complex)
+        if (abs==1):
+            yf = 1.0/N * np.abs(yf_complex)
+        else:
+            yf = 1.0/N * yf_complex
         xf = np.linspace(0.0, 1.0/T-1, N)[1:]
         return xf, yf
+
+def get_average_mean(func, r):
+# description:  Calculate the mean z value at a certain r for a given function (CC).
+# param:        func: the target function which is based on CC
+#               r: radius of the circle
+# return:       result: z value for given r and func
+    count = 50
+    scale = np.linspace(0, 2*np.pi, count)
+    samples = np.zeros(count)
+    for i in np.arange(0, count):
+        samples[i] = func(r, scale[i])
+#    print(samples)
+    result = np.mean(samples)
+    return result
+
+def get_average_fft(func, r):
+# description:  Calculate the mean z value at a certain r for a given function (CC)
+#               using the 2nd method: Process FFT, then pick up the zeroth term
+# NOTE:######################critical############################
+# THERE MIGHT BE SOMETHING WRONG WITH THIS METHOD, USE "get_average" INSTEAD!!!!!
+# BECAUSE "get_rad_fft" RETURNS COMPLEX, THE RESULT IS NOT RELIABLE.
+# param:        func: the target function which is based on CC
+# return:       func_out: function that represents the rot composition,
+#                         whose input and output are similar to that of zfunc
+    xf, yf = get_rad_fft(func, r, 50, 1.0/50.0, with_column_zero=1, abs=0)
+    result = yf[0]
+    return result
 
 def get_rot_part(func):
 # description:  Get the rotation part in a given surface shape function
@@ -137,9 +171,8 @@ def get_rot_part(func):
 # return:       func_out: function that represents the rot composition,
 #                         whose input and output are similar to that of zfunc
     def func_out(r, theta):
-        xf, yf = get_rad_fft(func, r, 50, 1.0/50.0, with_column_zero=1)
-        value = yf[0]
-        return value
+#        return get_average_fft(func, r)
+        return get_average_mean(func, r)
     return func_out
 
 def get_nonrot_part(func):
@@ -285,9 +318,9 @@ def plot_z_v_a(func):
 '''
         Three ways to obtain rot composition
     1, Observe Zernike Polynomial literally, then pick up every term
-       that is irrevelent to theta
+       that is irrevelent to theta(in theory)
     2, Process FFT, then pick up the zeroth term(accomplished)
-    3, calculate the mean at every radius value
+    3, calculate the mean at every radius value(accomplished)
     Difference between original surface and rot composition 
     is non-rot composition
 '''
